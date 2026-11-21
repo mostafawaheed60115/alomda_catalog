@@ -1,0 +1,48 @@
+@import '@fontsource/cairo/arabic-400.css';
+@import '@fontsource/cairo/arabic-600.css';
+@import '@fontsource/cairo/arabic-700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply scroll-pt-20 antialiased; }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+  body { @apply bg-paper font-sans text-ink; }
+  :focus-visible { @apply outline-none ring-4 ring-royal/40; }
+  ::selection { @apply bg-royal text-paper; }
+}
+
+@layer components {
+  /*
+   * 3D tilt surface. --bx/--by = resting angle, --rx/--ry = live pointer offset
+   * (written by the useTilt hook, so pointer moves never re-render React).
+   */
+  .tilt {
+    @apply transform-style-3d transition-transform duration-200 ease-out will-change-transform;
+    transform: rotateX(calc(var(--bx, 0deg) + var(--rx, 0deg)))
+      rotateY(calc(var(--by, 0deg) + var(--ry, 0deg)));
+  }
+  .tilt.is-active { @apply duration-75; }
+
+  /* Section heading with the brand's chamfered accent bar */
+  .eyebrow { @apply mb-2 inline-block bg-royal px-3 py-1 text-xs font-bold tracking-wide text-paper clip-chip; }
+
+  /* Skeleton shimmer for loading states */
+  .shimmer {
+    background: linear-gradient(90deg, #bebdba55 25%, #f6f6f6 50%, #bebdba55 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s linear infinite;
+  }
+}
+
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes load-bar { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation: none !important; transition: none !important; }
+  .tilt { transform: none !important; }
+}
