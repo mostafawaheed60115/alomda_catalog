@@ -22,8 +22,9 @@ export function descendantIds(categories, rootId) {
  * Splits "الوصف: ...\nأهم المميزات: ..." into [{ label, text }] rows.
  * Lines without a short "label:" prefix become label-less paragraphs.
  */
-export function parseDescription(description = '') {
-  return description
+export function parseDescription(description) {
+  // The API sends `null` (not undefined) for products without a description.
+  return String(description ?? '')
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
