@@ -1,27 +1,23 @@
-import fallback from '../data/storefront.json';
+import fallbackStore from '../data/store.json';
+import fallbackMenu from '../data/menu.json';
+import { mapGallery, normalizeCatalog } from './normalize';
 
-const BASE = import.meta.env.VITE_API_BASE ?? '';
+// The API lives on its own origin (Cloudflare Worker), NOT on the site's origin.
+const BASE = (import.meta.env.VITE_API_BASE || 'https://stores.nova-solution.net').replace(/\/$/, '');
 const SLUG = import.meta.env.VITE_STORE_SLUG || 'alomda';
 const TTL_MS = Number(import.meta.env.VITE_CATALOG_TTL_MIN || 30) * 60_000;
-const KEY = `catalog:${SLUG}:v1`;
+const KEY = `catalog:${SLUG}:v2`;
+const ROOT = `${BASE}/public/stores/${SLUG}`;
 
-/** Bundled snapshot: first paint needs zero network. */
-export const initialData = normalize(fallback);
+/** Bundled snapshot of the live data: first paint needs zero network. */
+export const initialData = normalizeCatalog(fallbackStore, fallbackMenu);
 
-/** Accept `{store, catalog}`, `{configuration: "<json>"}` or a bare catalog. */
-function normalize(raw) {
-  const src = typeof raw?.configuration === 'string' ? JSON.parse(raw.configuration) : raw;
-  const catalog = src.catalog ?? src;
-  const store = src.store ?? {};
-  const products = (catalog.products ?? [])
-    .filter((p) => p.isActive !== false)
-    .map((p) => ({ ...p, images: [...(p.images ?? [])].sort((a, b) => a.sortOrder - b.sortOrder) }));
-  return {
-    store,
-    categories: catalog.categories ?? [],
-    products,
-    features: store.features ?? {},
-  };
+// Plain GET with no custom headers => a "simple" CORS request (no preflight round-trip).
+// Revalidation (ETag / Cache-Control) is left to the browser's HTTP cache.
+async function getJson(url, signal) {
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${url}`);
+  return res.json();
 }
 
 const readCache = () => {
@@ -31,12 +27,20 @@ const readCache = () => {
     return null;
   }
 };
+const writeCache = (data, t = Date.now()) => {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ t, data }));
+  } catch {
+    /* storage full or blocked: run without cache */
+  }
+};
 
-let inflight = null; // dedupe: concurrent callers share one request
+let inflight = null; // dedupe: concurrent callers share one request pair
 
 /**
- * Returns { data, fresh }. At most ONE network call per TTL window, and it is
- * conditional (If-None-Match) so an unchanged catalog costs a bodyless 304.
+ * Whole catalog in TWO requests: store flags + /menu (categories + products in one payload).
+ * At most one pair per TTL window; fresh cache = zero requests.
+ * Returns { data, fresh }.
  */
 export async function loadCatalog({ signal } = {}) {
   const cached = readCache();
@@ -45,22 +49,15 @@ export async function loadCatalog({ signal } = {}) {
 
   inflight = (async () => {
     try {
-      const headers = cached?.etag ? { 'If-None-Match': cached.etag } : {};
-      const res = await fetch(`${BASE}/public/stores/${SLUG}`, { headers, signal });
-      if (res.status === 304 && cached) {
-        localStorage.setItem(KEY, JSON.stringify({ ...cached, t: Date.now() }));
-        return { data: cached.data, fresh: true };
-      }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = normalize(await res.json());
-      localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), etag: res.headers.get('ETag'), data }));
+      const [store, menu] = await Promise.all([getJson(ROOT, signal), getJson(`${ROOT}/menu`, signal)]);
+      const data = normalizeCatalog(store, menu);
+      writeCache(data);
       return { data, fresh: true };
     } catch (err) {
       if (err.name === 'AbortError') throw err;
-      // Offline / API down: serve stale cache, then bundled snapshot.
-      // Back off 5 min so a failing API is not retried on every page load.
+      // API down / offline: keep showing the last good data, retry in 5 min (not on every page load).
       const data = cached?.data ?? initialData;
-      localStorage.setItem(KEY, JSON.stringify({ ...cached, data, t: Date.now() - TTL_MS + 5 * 60_000 }));
+      writeCache(data, Date.now() - TTL_MS + 5 * 60_000);
       return { data, fresh: false, error: err };
     } finally {
       inflight = null;
@@ -70,3 +67,16 @@ export async function loadCatalog({ signal } = {}) {
 }
 
 export const readCachedData = () => readCache()?.data ?? initialData;
+
+// ---- product gallery: fetched lazily, only when a product is opened, once per session ----
+const galleries = new Map();
+
+/** Resolves to the product's images (sorted). Cached in memory; failures are not cached. */
+export function loadGallery(productId) {
+  if (!galleries.has(productId)) {
+    const p = getJson(`${ROOT}/products/${productId}`).then(mapGallery);
+    p.catch(() => galleries.delete(productId));
+    galleries.set(productId, p);
+  }
+  return galleries.get(productId);
+}

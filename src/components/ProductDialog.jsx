@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from './Icons';
 import { Btn3D } from './ui3d';
+import { useGallery } from '../hooks/useGallery';
 import { featureList, formatPrice, parseDescription } from '../utils';
 import { productInquiryLink, telLink } from '../config/store';
 
@@ -60,7 +61,8 @@ export default function ProductDialog({ product, products, features, categoryNam
     return () => window.removeEventListener('keydown', onKey);
   }, [go]);
 
-  const img = product.images[active];
+  const images = useGallery(product);
+  const img = images[active];
   const rows = features.description ? parseDescription(product.description) : [];
   const chips = features.description ? featureList(product.description, 6) : [];
   const hasPrice = features.price && product.price != null;
@@ -82,9 +84,9 @@ export default function ProductDialog({ product, products, features, categoryNam
               <div className="grid aspect-square place-items-center"><Icon name="box" className="size-16 text-royal" /></div>
             )}
           </div>
-          {product.images.length > 1 && (
+          {images.length > 1 && (
             <div className="mt-4 flex gap-3">
-              {product.images.map((im, i) => (
+              {images.map((im, i) => (
                 <button key={im.id} type="button" aria-label={`صورة ${i + 1}`} aria-pressed={i === active} onClick={() => setActive(i)}
                   className={`size-16 overflow-hidden rounded-xl bg-white ring-2 ${i === active ? 'ring-royal' : 'ring-silver'}`}>
                   <img src={im.url} alt="" width="64" height="64" loading="lazy" className="size-full object-contain p-1" />
