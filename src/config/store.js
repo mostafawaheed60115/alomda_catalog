@@ -1,7 +1,7 @@
 /** Static business details shown across the catalog. */
 export const CONTACT = {
   name: 'العمدة',
-  tagline: 'كتالوج مواد البناء والعزل',
+  tagline: 'كتالوج مواد البناء والديكور',
   phone: '01206989343',
   phoneIntl: '+201206989343',
   whatsapp: '201206989343', // wa.me expects digits only, with country code

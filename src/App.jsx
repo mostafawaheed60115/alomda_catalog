@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
+import About from './components/About';
 import Categories from './components/Categories';
 import Products from './components/Products';
 import Contact from './components/Contact';
@@ -51,6 +52,7 @@ export default function App() {
 
       <main>
         <Hero categoryCount={roots.length} productCount={products.length} featured={featured} onOpen={openProduct} />
+        <About />
         <Categories categories={roots} counts={counts} activeId={categoryId} onSelect={selectCategory} />
         <Products categories={categories} products={products} features={features} counts={counts}
           categoryId={categoryId} onCategory={selectCategory} onOpen={openProduct} />

@@ -4,6 +4,7 @@ import { Btn3D } from './ui3d';
 import { CONTACT, telLink } from '../config/store';
 
 const LINKS = [
+  { href: '#about', label: 'من نحن' },
   { href: '#categories', label: 'الأقسام' },
   { href: '#products', label: 'المنتجات' },
   { href: '#contact', label: 'تواصل معنا' },
@@ -26,13 +27,14 @@ export default function Header({ loading }) {
         </div>
       </div>
 
-      <header className="sticky top-0 z-30 border-b-4 border-royal bg-paper/95 backdrop-blur">
+      {/* Dark header: the gold emblem and wordmark need a dark surface to stay readable. */}
+      <header className="sticky top-0 z-30 border-b-4 border-royal bg-ink/95 text-paper backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <a href="#top" aria-label="العمدة - الرئيسية"><Logo /></a>
+          <a href="#top" aria-label="العمدة - الرئيسية"><Logo light /></a>
           <nav aria-label="القائمة الرئيسية" className="hidden items-center gap-1 md:flex">
             {LINKS.map((l) => (
               <a key={l.href} href={l.href}
-                className="rounded-lg px-4 py-2 font-semibold transition hover:bg-royal hover:text-paper">
+                className="rounded-lg px-4 py-2 font-semibold text-paper transition hover:bg-royal hover:text-paper">
                 {l.label}
               </a>
             ))}

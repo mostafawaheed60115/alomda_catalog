@@ -2,13 +2,6 @@ import { Icon } from './Icons';
 import { Btn3D, Tilt } from './ui3d';
 import { CONTACT, telLink } from '../config/store';
 
-// Pillars echo the logo and the palette artwork. `z` pushes each one forward in 3D space.
-const PILLARS = [
-  { x: '0%', h: '70%', z: 10, face: 'bg-paper', back: 'bg-silver' },
-  { x: '34%', h: '100%', z: 40, face: 'bg-royal', back: 'bg-royal-deep' },
-  { x: '68%', h: '82%', z: 70, face: 'bg-silver', back: 'bg-paper/60' },
-];
-
 const Stat = ({ value, label }) => (
   <div className="rounded-xl bg-paper/10 px-4 py-3 text-center ring-1 ring-paper/20">
     <div className="text-2xl font-bold">{value}</div>
@@ -51,14 +44,11 @@ export default function Hero({ categoryCount, productCount, featured, onOpen }) 
 
         {/* 3D stage */}
         <Tilt max={16} base={{ x: 8, y: -14 }} wrapperClassName="mx-auto w-full max-w-[440px]"
-          className="relative h-[380px] sm:h-[460px]">
-          {PILLARS.map((p) => (
-            <div key={p.x} className="transform-style-3d absolute bottom-0 w-[32%]"
-              style={{ insetInlineStart: p.x, height: p.h, translate: `0 0 ${p.z}px` }}>
-              <div className={`absolute inset-0 -translate-z-6 clip-pillar ${p.back}`} />
-              <div className={`absolute inset-0 clip-pillar ${p.face}`} />
-            </div>
-          ))}
+          className="relative h-[440px] sm:h-[480px]">
+          {/* Full lockup as a floating plate. Fixed width/height so nothing shifts while it loads. */}
+          <img src="/logo.png" width="506" height="666" fetchPriority="high"
+            alt="شعار العمدة للديكور ومواد البناء"
+            className="absolute inset-x-0 top-0 mx-auto h-[300px] w-auto rounded-3xl shadow-float-lg translate-z-[60px] sm:h-[340px]" />
 
           {featured && (
             <button type="button" onClick={() => onOpen(featured)}
